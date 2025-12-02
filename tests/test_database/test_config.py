@@ -13,9 +13,24 @@ from pydantic import ValidationError
 class TestDatabaseSettings:
     """Tests for DatabaseSettings class."""
 
-    def test_database_settings_defaults(self) -> None:
-        """Verify all default values for DatabaseSettings."""
+    def test_database_settings_defaults(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Verify all default values for DatabaseSettings.
+
+        Note: We must unset any NOF1_DB_* env vars that may be set
+        by docker-compose.yml to test true defaults.
+        """
         from nof1_tracker.database.config import DatabaseSettings
+
+        # Clear any environment variables that might override defaults
+        monkeypatch.delenv("NOF1_DB_HOST", raising=False)
+        monkeypatch.delenv("NOF1_DB_PORT", raising=False)
+        monkeypatch.delenv("NOF1_DB_NAME", raising=False)
+        monkeypatch.delenv("NOF1_DB_USER", raising=False)
+        monkeypatch.delenv("NOF1_DB_PASSWORD", raising=False)
+        monkeypatch.delenv("NOF1_DB_POOL_SIZE", raising=False)
+        monkeypatch.delenv("NOF1_DB_MAX_OVERFLOW", raising=False)
 
         settings = DatabaseSettings()
 
