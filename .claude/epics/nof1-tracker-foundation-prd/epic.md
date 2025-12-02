@@ -4,7 +4,7 @@ status: backlog
 created: 2025-12-02T13:24:51.808Z
 progress: 0%
 prd: .claude/prds/nof1-tracker-foundation-prd.md
-github: [Will be updated when synced to GitHub]
+github: https://github.com/Dixter999/nof1-tracker/issues/2
 priority: P1
 ---
 
@@ -140,27 +140,27 @@ Foundation setup for tracking and analyzing LLM trading performance from nof1.ai
 
 ## Tasks Created
 
-- [ ] 001.md - Project scaffolding and pyproject.toml (parallel: false)
-- [ ] 002.md - Docker and PostgreSQL setup (parallel: false)
-- [ ] 003.md - Pydantic configuration module (parallel: true)
-- [ ] 004.md - SQLAlchemy ORM models (parallel: true)
-- [ ] 005.md - Database connection manager (parallel: false)
-- [ ] 006.md - Alembic migrations setup (parallel: false)
-- [ ] 007.md - Test fixtures and conftest.py (parallel: true)
+- [ ] [#3](https://github.com/Dixter999/nof1-tracker/issues/3) - Project scaffolding and pyproject.toml (parallel: false)
+- [ ] [#4](https://github.com/Dixter999/nof1-tracker/issues/4) - Docker and PostgreSQL setup (parallel: false)
+- [ ] [#5](https://github.com/Dixter999/nof1-tracker/issues/5) - Pydantic configuration module (parallel: true)
+- [ ] [#6](https://github.com/Dixter999/nof1-tracker/issues/6) - SQLAlchemy ORM models (parallel: true)
+- [ ] [#7](https://github.com/Dixter999/nof1-tracker/issues/7) - Database connection manager (parallel: false)
+- [ ] [#8](https://github.com/Dixter999/nof1-tracker/issues/8) - Alembic migrations setup (parallel: false)
+- [ ] [#9](https://github.com/Dixter999/nof1-tracker/issues/9) - Test fixtures and conftest.py (parallel: true)
 
 **Total tasks:** 7
-**Parallel tasks:** 3 (003, 004, 007)
-**Sequential tasks:** 4 (001, 002, 005, 006)
+**Parallel tasks:** 3 (#5, #6, #9)
+**Sequential tasks:** 4 (#3, #4, #7, #8)
 **Estimated total effort:** ~18-22 hours
 
 ### Task Dependency Graph
 
 ```
-001 (Project scaffolding)
- ├─> 002 (Docker setup)
- ├─> 003 (Pydantic config) ──┐
- └─> 004 (SQLAlchemy models) ├──> 005 (Connection manager) ──> 006 (Alembic)
-                             └──> 007 (Test fixtures)
+#3 (Project scaffolding)
+ ├─> #4 (Docker setup)
+ ├─> #5 (Pydantic config) ──┐
+ └─> #6 (SQLAlchemy models) ├──> #7 (Connection manager) ──> #8 (Alembic)
+                            └──> #9 (Test fixtures)
 ```
 
 ## Notes
