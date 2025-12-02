@@ -1,0 +1,76 @@
+# Docker Compose configuration for NOF1 Tracker local development
+# Usage: docker compose up -d
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: nof1-tracker-db
+    environment:
+      POSTGRES_USER: ${NOF1_DB_USER:-nof1_user}
+      POSTGRES_PASSWORD: ${NOF1_DB_PASSWORD:-nof1_password}
+      POSTGRES_DB: ${NOF1_DB_NAME:-nof1_tracker}
+    ports:
+      - "${NOF1_DB_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./migrations/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${NOF1_DB_USER:-nof1_user} -d ${NOF1_DB_NAME:-nof1_tracker}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: nof1-tracker-app
+    env_file:
+      - .env
+    environment:
+      NOF1_DB_HOST: postgres
+    volumes:
+      - ./src:/app/src:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: ["python", "-m", "nof1_tracker.main", "--help"]
+
+  scraper:
+    profiles: [scraper]
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: nof1-tracker-scraper
+    env_file:
+      - .env
+    environment:
+      NOF1_DB_HOST: postgres
+    volumes:
+      - ./src:/app/src:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: ["python", "-m", "nof1_tracker.scraper"]
+
+  monitor:
+    profiles: [monitor]
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: nof1-tracker-monitor
+    env_file:
+      - .env
+    environment:
+      NOF1_DB_HOST: postgres
+    volumes:
+      - ./src:/app/src:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+    command: ["python", "-m", "nof1_tracker.monitor"]
+
+volumes:
+  postgres_data:
