@@ -1,0 +1,103 @@
+{
+  "version": "3.1.0",
+  "installed": "2025-12-02T13:19:55.829Z",
+  "execution_strategy": "adaptive",
+  "tools": {
+    "docker": {
+      "enabled": true,
+      "first": true
+    },
+    "kubernetes": {
+      "enabled": true
+    }
+  },
+  "plugins": [
+    "plugin-core",
+    "plugin-languages",
+    "plugin-frameworks",
+    "plugin-testing",
+    "plugin-devops",
+    "plugin-cloud",
+    "plugin-databases",
+    "plugin-pm",
+    "plugin-ai"
+  ],
+  "installedPlugins": [
+    {
+      "name": "plugin-core",
+      "displayName": "Core Framework",
+      "agents": 4,
+      "commands": 2,
+      "rules": 2
+    },
+    {
+      "name": "plugin-languages",
+      "displayName": "Programming Languages",
+      "agents": 5,
+      "commands": 5,
+      "rules": 2
+    },
+    {
+      "name": "plugin-frameworks",
+      "displayName": "Frontend Frameworks & UI",
+      "agents": 4,
+      "commands": 4,
+      "rules": 2
+    },
+    {
+      "name": "plugin-testing",
+      "displayName": "Testing & QA",
+      "agents": 1,
+      "commands": 7,
+      "rules": 1
+    },
+    {
+      "name": "plugin-devops",
+      "displayName": "DevOps & Infrastructure",
+      "agents": 7,
+      "commands": 7,
+      "rules": 3
+    },
+    {
+      "name": "plugin-cloud",
+      "displayName": "Cloud Providers & Infrastructure",
+      "agents": 8,
+      "commands": 8,
+      "rules": 2
+    },
+    {
+      "name": "plugin-databases",
+      "displayName": "Database & Data Storage",
+      "agents": 5,
+      "commands": 5,
+      "rules": 2
+    },
+    {
+      "name": "plugin-pm",
+      "displayName": "Project Management",
+      "agents": 0,
+      "commands": 45,
+      "rules": 0
+    },
+    {
+      "name": "plugin-ai",
+      "displayName": "AI & Machine Learning",
+      "agents": 8,
+      "commands": 9,
+      "rules": 2
+    }
+  ],
+  "failedPlugins": [],
+  "providers": {
+    "github": {
+      "owner": "Dixter999",
+      "repo": "nof1-tracker"
+    }
+  },
+  "provider": "github",
+  "mcp": {
+    "activeServers": [
+      "context7"
+    ]
+  }
+}
