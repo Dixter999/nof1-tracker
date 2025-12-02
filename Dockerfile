@@ -22,9 +22,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/* \
     && apt-get clean
 
-# Copy dependency files first for better Docker layer caching
-# Changes to application code won't invalidate dependency layers
-COPY pyproject.toml .
+# Copy dependency files and source for editable install
+# README.md is required by hatchling for editable install
+# src/ is required for editable install to resolve package
+COPY pyproject.toml README.md ./
+COPY src/ ./src/
 
 # Install Python dependencies with dev extras for testing
 RUN pip install --no-cache-dir --upgrade pip \
@@ -34,8 +36,7 @@ RUN pip install --no-cache-dir --upgrade pip \
 # Required for web scraping functionality
 RUN playwright install chromium --with-deps
 
-# Copy application code (after dependencies for better caching)
-COPY src/ ./src/
+# Copy remaining project files
 COPY migrations/ ./migrations/
 COPY tests/ ./tests/
 
