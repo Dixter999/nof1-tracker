@@ -13,9 +13,9 @@ Example:
     ...         await page.goto("https://nof1.ai")
 """
 
+from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
-from datetime import datetime, timezone
-from typing import AsyncIterator
+from datetime import UTC, datetime
 
 from playwright.async_api import Browser, Page, Playwright, async_playwright
 
@@ -148,4 +148,4 @@ class BaseScraper:
             >>> timestamp.tzinfo is not None
             True
         """
-        return datetime.now(timezone.utc)
+        return datetime.now(UTC)

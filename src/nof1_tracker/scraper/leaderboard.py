@@ -165,7 +165,9 @@ class LeaderboardScraper(BaseScraper):
                 row, '[data-testid="total-assets"]'
             )
             pnl = await self._extract_decimal(row, '[data-testid="pnl"]')
-            pnl_percent = await self._extract_decimal(row, '[data-testid="pnl-percent"]')
+            pnl_percent = await self._extract_decimal(
+                row, '[data-testid="pnl-percent"]'
+            )
 
             # Use defaults if not found
             if total_assets is None:
@@ -229,9 +231,7 @@ class LeaderboardScraper(BaseScraper):
             pass
         return None
 
-    async def _extract_int(
-        self, element: ElementHandle, selector: str
-    ) -> int | None:
+    async def _extract_int(self, element: ElementHandle, selector: str) -> int | None:
         """Extract integer value from element.
 
         Args:

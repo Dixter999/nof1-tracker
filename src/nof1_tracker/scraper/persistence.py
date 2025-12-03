@@ -14,7 +14,7 @@ Example:
     ...     season = persistence.get_or_create_season(1)
 """
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from sqlalchemy.orm import Session
 
@@ -110,7 +110,7 @@ class DataPersistence:
             season = Season(
                 season_number=season_number,
                 name=f"Season {season_number}",
-                start_date=datetime.now(timezone.utc),
+                start_date=datetime.now(UTC),
                 status=SeasonStatus.active,
             )
             self.session.add(season)
@@ -186,9 +186,7 @@ class DataPersistence:
         """
         # Map side - "long" and "buy" both map to buy
         side = (
-            TradeSide.buy
-            if trade.side.lower() in ("long", "buy")
-            else TradeSide.sell
+            TradeSide.buy if trade.side.lower() in ("long", "buy") else TradeSide.sell
         )
 
         # Map status
@@ -202,9 +200,7 @@ class DataPersistence:
         # Generate trade_id if not provided
         trade_id = trade.trade_id
         if not trade_id:
-            trade_id = (
-                f"{model.id}-{trade.symbol}-{trade.opened_at.isoformat()}"
-            )
+            trade_id = f"{model.id}-{trade.symbol}-{trade.opened_at.isoformat()}"
 
         db_trade = Trade(
             model_id=model.id,

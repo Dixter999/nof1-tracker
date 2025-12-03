@@ -262,9 +262,7 @@ class ModelPageScraper(BaseScraper):
 
             # Extract symbol
             symbol_el = await row.query_selector('[data-testid="symbol"]')
-            symbol = (
-                await symbol_el.inner_text() if symbol_el else "UNKNOWN"
-            ).strip()
+            symbol = (await symbol_el.inner_text() if symbol_el else "UNKNOWN").strip()
 
             # Extract side
             side_el = await row.query_selector('[data-testid="side"]')
@@ -318,8 +316,8 @@ class ModelPageScraper(BaseScraper):
             # Extract status
             status_el = await row.query_selector('[data-testid="status"]')
             status = (
-                await status_el.inner_text() if status_el else "open"
-            ).strip().lower()
+                (await status_el.inner_text() if status_el else "open").strip().lower()
+            )
 
             return TradeData(
                 trade_id=trade_id,
@@ -384,9 +382,7 @@ class ModelPageScraper(BaseScraper):
         """
         try:
             symbol_el = await row.query_selector('[data-testid="symbol"]')
-            symbol = (
-                await symbol_el.inner_text() if symbol_el else "UNKNOWN"
-            ).strip()
+            symbol = (await symbol_el.inner_text() if symbol_el else "UNKNOWN").strip()
 
             side_el = await row.query_selector('[data-testid="side"]')
             side = (await side_el.inner_text() if side_el else "long").strip().lower()
@@ -460,9 +456,7 @@ class ModelPageScraper(BaseScraper):
         try:
             entries = await page.query_selector_all('[data-testid="chat-entry"]')
             if not entries:
-                entries = await page.query_selector_all(
-                    ".chat-entry, .reasoning-entry"
-                )
+                entries = await page.query_selector_all(".chat-entry, .reasoning-entry")
 
             for entry in entries:
                 chat = await self._parse_chat_entry(entry)

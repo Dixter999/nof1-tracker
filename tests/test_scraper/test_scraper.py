@@ -11,20 +11,18 @@ Note: Integration tests that require actual browser/network access
 should be marked with @pytest.mark.integration.
 """
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from decimal import Decimal
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
 from nof1_tracker.database.models import (
-    Base,
     ChatDecision,
     LLMModel,
     Season,
     SeasonStatus,
     TradeSide,
-    TradeStatus,
 )
 
 
@@ -59,9 +57,9 @@ class TestBaseScraper:
         """Test now_utc returns UTC datetime."""
         from nof1_tracker.scraper.base import BaseScraper
 
-        before = datetime.now(timezone.utc)
+        before = datetime.now(UTC)
         result = BaseScraper.now_utc()
-        after = datetime.now(timezone.utc)
+        after = datetime.now(UTC)
 
         assert result.tzinfo is not None
         assert before <= result <= after
@@ -139,7 +137,7 @@ class TestLeaderboardEntry:
             leverage=Decimal("2.0"),
             confidence=Decimal("85.0"),
             raw_data={"test": "data"},
-            scraped_at=datetime.now(timezone.utc),
+            scraped_at=datetime.now(UTC),
         )
 
         assert entry.model_name == "Claude Sonnet 4.5"
@@ -165,7 +163,7 @@ class TestLeaderboardEntry:
             leverage=None,
             confidence=None,
             raw_data={},
-            scraped_at=datetime.now(timezone.utc),
+            scraped_at=datetime.now(UTC),
         )
 
         assert entry.sharpe_ratio is None
@@ -230,8 +228,8 @@ class TestTradeData:
             pnl=Decimal("100.00"),
             pnl_percent=Decimal("2.0"),
             status="closed",
-            opened_at=datetime.now(timezone.utc),
-            closed_at=datetime.now(timezone.utc),
+            opened_at=datetime.now(UTC),
+            closed_at=datetime.now(UTC),
             raw_data={"test": "data"},
         )
 
@@ -249,7 +247,7 @@ class TestModelChatData:
         from nof1_tracker.scraper.models import ModelChatData
 
         chat = ModelChatData(
-            timestamp=datetime.now(timezone.utc),
+            timestamp=datetime.now(UTC),
             content="I recommend buying BTC",
             decision="buy",
             symbol="BTC-PERP",
@@ -374,7 +372,7 @@ class TestDataPersistence:
             leverage=None,
             confidence=None,
             raw_data={},
-            scraped_at=datetime.now(timezone.utc),
+            scraped_at=datetime.now(UTC),
         )
 
         snapshot = persistence.save_leaderboard_entry(entry, season)
@@ -402,7 +400,7 @@ class TestDataPersistence:
             pnl=None,
             pnl_percent=None,
             status="open",
-            opened_at=datetime.now(timezone.utc),
+            opened_at=datetime.now(UTC),
             closed_at=None,
             raw_data={},
         )
@@ -431,7 +429,7 @@ class TestDataPersistence:
             pnl=None,
             pnl_percent=None,
             status="open",
-            opened_at=datetime.now(timezone.utc),
+            opened_at=datetime.now(UTC),
             closed_at=None,
             raw_data={},
         )
@@ -448,7 +446,7 @@ class TestDataPersistence:
 
         persistence = DataPersistence(mock_session)
         chat_data = ModelChatData(
-            timestamp=datetime.now(timezone.utc),
+            timestamp=datetime.now(UTC),
             content="Buy recommendation",
             decision="buy",
             symbol="BTC-PERP",
