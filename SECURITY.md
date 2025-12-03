@@ -20,7 +20,7 @@ We take the security of NOF1 Tracker seriously. If you discover a security vulne
 
 ### Do
 
-1. **Email us directly** at [INSERT SECURITY EMAIL]
+1. **Email us directly** at daniel@lagowski.es
 2. **Include the following information**:
    - Type of vulnerability (e.g., SQL injection, XSS, authentication bypass)
    - Full path of the affected source file(s)
@@ -93,7 +93,7 @@ Security updates will be announced through:
 
 For security-related inquiries, please contact:
 
-- **Email**: [INSERT SECURITY EMAIL]
+- **Email**: daniel@lagowski.es
 - **GitHub**: Open an issue with the "security" label for non-sensitive questions
 
 Thank you for helping keep NOF1 Tracker secure!
