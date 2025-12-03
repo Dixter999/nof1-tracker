@@ -29,8 +29,8 @@ Example:
 """
 
 import os
+from collections.abc import Generator
 from contextlib import contextmanager
-from typing import Generator
 from urllib.parse import quote_plus
 
 from sqlalchemy import Engine, create_engine
@@ -40,7 +40,7 @@ from nof1_tracker.database.models import Base
 
 # Module-level engine (singleton pattern)
 _engine: Engine | None = None
-_session_maker: sessionmaker | None = None
+_session_maker: sessionmaker[Session] | None = None
 
 
 def get_database_url() -> str:
@@ -139,7 +139,7 @@ def get_engine() -> Engine:
     return _engine
 
 
-def get_session_maker() -> sessionmaker:
+def get_session_maker() -> sessionmaker[Session]:
     """Get or create the session factory.
 
     Returns the shared sessionmaker instance, creating it if necessary.

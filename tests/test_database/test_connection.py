@@ -8,7 +8,6 @@ This module tests the database connection utilities including:
 - Database initialization
 """
 
-import pytest
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
