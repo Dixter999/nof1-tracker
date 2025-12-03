@@ -37,6 +37,7 @@ RUN pip install --no-cache-dir --upgrade pip \
 RUN playwright install chromium --with-deps
 
 # Copy remaining project files
+COPY alembic.ini ./
 COPY migrations/ ./migrations/
 COPY tests/ ./tests/
 
