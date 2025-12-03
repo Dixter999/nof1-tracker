@@ -7,11 +7,11 @@ This module configures the Alembic migration environment for PostgreSQL:
 - Configures offline and online migration modes
 
 Environment Variables:
-    DB_HOST: Database host (default: 10.0.0.4)
-    DB_PORT: Database port (default: 5432)
-    DB_NAME: Database name (default: ai_model)
-    DB_USER: Database user (default: ai_model)
-    DB_PASSWORD: Database password (no default for security)
+    NOF1_DB_HOST: Database host (default: localhost)
+    NOF1_DB_PORT: Database port (default: 5432)
+    NOF1_DB_NAME: Database name (default: nof1_tracker)
+    NOF1_DB_USER: Database user (default: nof1_user)
+    NOF1_DB_PASSWORD: Database password (no default for security)
 """
 
 import os
@@ -45,13 +45,13 @@ def get_database_url() -> str:
         str: PostgreSQL connection URL in SQLAlchemy format.
 
     Example:
-        postgresql://ai_model:q%23cCjmI5Tu3B@10.0.0.4:5432/ai_model
+        postgresql://nof1_user:password@localhost:5432/nof1_tracker
     """
-    user = os.getenv("DB_USER", "ai_model")
-    password = os.getenv("DB_PASSWORD", "")
-    host = os.getenv("DB_HOST", "10.0.0.4")
-    port = os.getenv("DB_PORT", "5432")
-    name = os.getenv("DB_NAME", "ai_model")
+    user = os.getenv("NOF1_DB_USER", "nof1_user")
+    password = os.getenv("NOF1_DB_PASSWORD", "")
+    host = os.getenv("NOF1_DB_HOST", "localhost")
+    port = os.getenv("NOF1_DB_PORT", "5432")
+    name = os.getenv("NOF1_DB_NAME", "nof1_tracker")
 
     # URL-encode password to handle special characters safely
     encoded_password = quote_plus(password)

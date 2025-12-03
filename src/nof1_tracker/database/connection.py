@@ -4,11 +4,11 @@ Provides engine creation with connection pooling, session management
 via context manager, and database initialization utilities.
 
 This module uses environment variables for database configuration:
-    DB_HOST: Database hostname (default: "10.0.0.4")
-    DB_PORT: Database port (default: "5432")
-    DB_NAME: Database name (default: "ai_model")
-    DB_USER: Database user (default: "ai_model")
-    DB_PASSWORD: Database password (default: "")
+    NOF1_DB_HOST: Database hostname (default: "localhost")
+    NOF1_DB_PORT: Database port (default: "5432")
+    NOF1_DB_NAME: Database name (default: "nof1_tracker")
+    NOF1_DB_USER: Database user (default: "nof1_user")
+    NOF1_DB_PASSWORD: Database password (default: "")
 
 Functions:
     get_database_url: Build PostgreSQL connection URL from environment.
@@ -51,11 +51,11 @@ def get_database_url() -> str:
     is URL-encoded to handle special characters.
 
     Environment Variables:
-        DB_HOST: Database hostname (default: "10.0.0.4")
-        DB_PORT: Database port (default: "5432")
-        DB_NAME: Database name (default: "ai_model")
-        DB_USER: Database user (default: "ai_model")
-        DB_PASSWORD: Database password (default: "")
+        NOF1_DB_HOST: Database hostname (default: "localhost")
+        NOF1_DB_PORT: Database port (default: "5432")
+        NOF1_DB_NAME: Database name (default: "nof1_tracker")
+        NOF1_DB_USER: Database user (default: "nof1_user")
+        NOF1_DB_PASSWORD: Database password (default: "")
 
     Returns:
         PostgreSQL connection URL in format:
@@ -66,11 +66,11 @@ def get_database_url() -> str:
         >>> url.startswith("postgresql://")
         True
     """
-    host = os.getenv("DB_HOST", "10.0.0.4")
-    port = os.getenv("DB_PORT", "5432")
-    name = os.getenv("DB_NAME", "ai_model")
-    user = os.getenv("DB_USER", "ai_model")
-    password = os.getenv("DB_PASSWORD", "")
+    host = os.getenv("NOF1_DB_HOST", "localhost")
+    port = os.getenv("NOF1_DB_PORT", "5432")
+    name = os.getenv("NOF1_DB_NAME", "nof1_tracker")
+    user = os.getenv("NOF1_DB_USER", "nof1_user")
+    password = os.getenv("NOF1_DB_PASSWORD", "")
 
     return f"postgresql://{user}:{quote_plus(password)}@{host}:{port}/{name}"
 

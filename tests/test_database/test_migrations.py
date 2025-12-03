@@ -20,12 +20,14 @@ from urllib.parse import quote_plus
 # =============================================================================
 # PostgreSQL Test Database Configuration
 # =============================================================================
+# Uses environment variables - configure via .env file or environment
+# Supports both NOF1_DB_ prefix (preferred) and legacy DB_ prefix
 
-TEST_DB_HOST = os.getenv("DB_HOST", "10.0.0.4")
-TEST_DB_PORT = os.getenv("DB_PORT", "5432")
-TEST_DB_NAME = os.getenv("DB_NAME", "ai_model")
-TEST_DB_USER = os.getenv("DB_USER", "ai_model")
-TEST_DB_PASSWORD = os.getenv("DB_PASSWORD", "q#cCjmI5Tu3B")
+TEST_DB_HOST = os.getenv("NOF1_DB_HOST", os.getenv("DB_HOST", "localhost"))
+TEST_DB_PORT = os.getenv("NOF1_DB_PORT", os.getenv("DB_PORT", "5432"))
+TEST_DB_NAME = os.getenv("NOF1_DB_NAME", os.getenv("DB_NAME", "nof1_tracker"))
+TEST_DB_USER = os.getenv("NOF1_DB_USER", os.getenv("DB_USER", "nof1_user"))
+TEST_DB_PASSWORD = os.getenv("NOF1_DB_PASSWORD", os.getenv("DB_PASSWORD", ""))
 
 TEST_DATABASE_URL = (
     f"postgresql://{TEST_DB_USER}:{quote_plus(TEST_DB_PASSWORD)}"

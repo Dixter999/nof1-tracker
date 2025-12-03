@@ -64,10 +64,10 @@ services:
     command: ["python", "-m", "nof1_tracker.main", "--help"]
 
   # ---------------------------------------------------------------------------
-  # Web Scraper Service
+  # Web Scraper Service (Single Run)
   # ---------------------------------------------------------------------------
-  # Profile-activated service for scraping trading data
-  # Activate with: docker compose --profile scraper up -d
+  # Profile-activated service for one-time scraping
+  # Activate with: docker compose --profile scraper up
   scraper:
     profiles: [scraper]
     build:
@@ -76,19 +76,15 @@ services:
     container_name: nof1-tracker-scraper
     env_file:
       - .env
-    environment:
-      NOF1_DB_HOST: postgres
+    # Uses NOF1_DB_HOST from .env (10.0.0.4) - no override needed
     volumes:
       - ./src:/app/src:ro
-    depends_on:
-      postgres:
-        condition: service_healthy
     command: ["python", "-m", "nof1_tracker.scraper"]
 
   # ---------------------------------------------------------------------------
-  # Monitor Service
+  # Monitor Service (Continuous Scraping)
   # ---------------------------------------------------------------------------
-  # Profile-activated background service for continuous monitoring
+  # Profile-activated background service for continuous scraping every 15 min
   # Activate with: docker compose --profile monitor up -d
   monitor:
     profiles: [monitor]
@@ -98,16 +94,12 @@ services:
     container_name: nof1-tracker-monitor
     env_file:
       - .env
-    environment:
-      NOF1_DB_HOST: postgres
+    # Uses NOF1_DB_HOST from .env (10.0.0.4) - no override needed
     volumes:
       - ./src:/app/src:ro
-    depends_on:
-      postgres:
-        condition: service_healthy
     # Auto-restart for persistent monitoring
     restart: unless-stopped
-    command: ["python", "-m", "nof1_tracker.monitor"]
+    command: ["python", "-m", "nof1_tracker.scraper", "--continuous", "--interval", "15"]
 
 # =============================================================================
 # Volumes
