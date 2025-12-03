@@ -44,6 +44,7 @@ class LeaderboardEntry:
         fees: Trading fees paid in USD (optional).
         leverage: Average leverage used (optional).
         confidence: Model's confidence level (optional).
+        model_url: URL path to the model's detail page (optional).
         raw_data: Original scraped data for debugging.
         scraped_at: Timestamp when data was scraped.
     """
@@ -60,6 +61,7 @@ class LeaderboardEntry:
     fees: Decimal | None
     leverage: Decimal | None
     confidence: Decimal | None
+    model_url: str | None
     raw_data: dict[str, Any]
     scraped_at: datetime
 
@@ -168,10 +170,18 @@ class LeaderboardScraper(BaseScraper):
             if len(cells) < 11:
                 return None
 
-            # Cell 1: Model name (second column)
+            # Cell 1: Model name (second column) - also extract URL if present
             model_name_cell = cells[1]
             model_name_text = await model_name_cell.inner_text()
             model_name_text = model_name_text.strip()
+
+            # Try to get the model URL from any link in the cell
+            model_url = None
+            link = await model_name_cell.query_selector("a")
+            if link:
+                href = await link.get_attribute("href")
+                if href:
+                    model_url = href  # e.g., "/models/23"
 
             # Cell 2: Total assets
             total_assets = await self._extract_decimal_from_cell(cells[2])
@@ -215,6 +225,7 @@ class LeaderboardScraper(BaseScraper):
                 fees=fees,
                 leverage=None,
                 confidence=None,
+                model_url=model_url,
                 raw_data={"rank": rank, "model": model_name_text},
                 scraped_at=self.now_utc(),
             )

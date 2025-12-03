@@ -193,6 +193,51 @@ class ModelPageScraper(BaseScraper):
                 "scraped_at": self.now_utc(),
             }
 
+    async def scrape_model_by_url(self, model_url: str) -> dict[str, Any]:
+        """Scrape all data for a model using its direct URL.
+
+        Navigates directly to the model's URL (e.g., /models/23) and
+        extracts trades, positions, and chat/reasoning history.
+
+        Args:
+            model_url: URL path to the model page (e.g., "/models/23").
+
+        Returns:
+            Dictionary containing:
+                - trades: List of TradeData
+                - positions: List of PositionData
+                - chats: List of ModelChatData
+                - scraped_at: Timestamp of scrape
+
+        Raises:
+            TimeoutError: If page fails to load within timeout.
+        """
+        import asyncio
+
+        async with self.new_page() as page:
+            # Build full URL from path
+            full_url = (
+                f"{self.BASE_URL}{model_url}"
+                if model_url.startswith("/")
+                else model_url
+            )
+            await page.goto(full_url)
+            await page.wait_for_load_state("networkidle")
+
+            # Wait a bit for dynamic content to load
+            await asyncio.sleep(2)
+
+            trades = await self._scrape_trades(page)
+            positions = await self._scrape_positions(page)
+            chats = await self._scrape_model_chat(page)
+
+            return {
+                "trades": trades,
+                "positions": positions,
+                "chats": chats,
+                "scraped_at": self.now_utc(),
+            }
+
     async def scrape_trades(self, model_name: str) -> list[TradeData]:
         """Scrape trade history for a model.
 
@@ -211,38 +256,92 @@ class ModelPageScraper(BaseScraper):
     async def _scrape_trades(self, page: Page) -> list[TradeData]:
         """Parse trades from page.
 
+        Actual nof1.ai trade structure uses CSS Grid (div.grid.grid-cols-10):
+        - Column 0: SIDE (LONG/SHORT)
+        - Column 1: COIN (symbol like AMZN)
+        - Column 2: ENTRY PRICE ($235.02)
+        - Column 3: EXIT PRICE ($235.13)
+        - Column 4: QUANTITY (2.34)
+        - Column 5: HOLDING TIME (35M)
+        - Column 6: NOTIONAL ENTRY ($549.95)
+        - Column 7: NOTIONAL EXIT ($550.20)
+        - Column 8: TOTAL FEES ($0.09)
+        - Column 9: NET P&L ($0.26)
+
         Args:
             page: The browser page to scrape from.
 
         Returns:
             List of TradeData objects.
         """
+        import re
+
         trades = []
 
-        # Click on trades tab if exists
         try:
-            trades_tab = await page.query_selector('[data-testid="trades-tab"]')
-            if not trades_tab:
-                trades_tab = await page.query_selector('button:has-text("Trades")')
-            if trades_tab:
-                await trades_tab.click()
-                await page.wait_for_timeout(1000)
-        except Exception:
-            pass
-
-        # Parse trade rows
-        rows = await page.query_selector_all('[data-testid="trade-row"]')
-
-        # Fallback to table rows
-        if not rows:
-            rows = await page.query_selector_all(
-                ".trades-table tbody tr, table tbody tr"
+            # Find trade rows inside the space-y-3 container (data rows)
+            # The header is grid-cols-10 with text-[10px], data rows are text-[12px]
+            trade_rows = await page.query_selector_all(
+                "div.space-y-3 > div.grid.grid-cols-10"
             )
 
-        for row in rows:
-            trade = await self._parse_trade_row(row)
-            if trade:
-                trades.append(trade)
+            for row in trade_rows:
+                cells = await row.query_selector_all(":scope > div")
+                if len(cells) >= 10:
+                    try:
+                        # Extract data from cells
+                        side_text = await cells[0].inner_text()
+                        side = side_text.strip().lower()
+
+                        symbol_text = await cells[1].inner_text()
+                        symbol = symbol_text.strip()
+
+                        entry_text = await cells[2].inner_text()
+                        entry_price = Decimal(re.sub(r"[$,]", "", entry_text).strip())
+
+                        exit_text = await cells[3].inner_text()
+                        exit_cleaned = re.sub(r"[$,]", "", exit_text).strip()
+                        exit_price = (
+                            Decimal(exit_cleaned)
+                            if exit_cleaned and exit_cleaned != "-"
+                            else None
+                        )
+
+                        qty_text = await cells[4].inner_text()
+                        size = Decimal(re.sub(r"[,]", "", qty_text).strip())
+
+                        # Column 9: NET P&L
+                        pnl_text = await cells[9].inner_text()
+                        pnl_cleaned = re.sub(r"[$,]", "", pnl_text).strip()
+                        pnl = (
+                            Decimal(pnl_cleaned)
+                            if pnl_cleaned and pnl_cleaned != "-"
+                            else None
+                        )
+
+                        trade = TradeData(
+                            trade_id=None,
+                            symbol=symbol,
+                            side=side,
+                            entry_price=entry_price,
+                            exit_price=exit_price,
+                            size=size,
+                            leverage=None,
+                            pnl=pnl,
+                            pnl_percent=None,
+                            status="closed" if exit_price else "open",
+                            opened_at=self.now_utc(),
+                            closed_at=self.now_utc() if exit_price else None,
+                            raw_data={"symbol": symbol, "side": side},
+                        )
+                        trades.append(trade)
+
+                    except Exception as e:
+                        print(f"Error parsing trade row: {e}")
+                        continue
+
+        except Exception as e:
+            print(f"Error scraping trades: {e}")
 
         return trades
 
@@ -341,31 +440,64 @@ class ModelPageScraper(BaseScraper):
     async def _scrape_positions(self, page: Page) -> list[PositionData]:
         """Parse current positions from page.
 
+        Actual nof1.ai position structure (ACTIVE POSITIONS section):
+        Positions are displayed as cards with format:
+        - LONG/SHORT + SYMBOL
+        - EXIT PLAN button
+        - ENTRY TIME: HH:MM:SS
+        - ENTRY PRICE: $XXX.XX
+        - QUANTITY: X.XXX
+        - LEVERAGE: XXX
+        - LIQUIDATION: $XXX.XX
+        - MARGIN: $XXX.XX
+        - UNREALIZED P&L: $XX.XX
+
         Args:
             page: The browser page to scrape from.
 
         Returns:
             List of PositionData objects.
         """
+        import re
+
         positions = []
 
-        # Try to find positions section
+        # Get all text from page and look for position patterns
         try:
-            pos_section = await page.query_selector('[data-testid="positions"]')
-            if not pos_section:
-                pos_section = await page.query_selector(".positions-section")
+            # Find text content that looks like positions
+            body_text = await page.inner_text("body")
 
-            if pos_section:
-                rows = await pos_section.query_selector_all(
-                    '[data-testid="position-row"]'
-                )
-                if not rows:
-                    rows = await pos_section.query_selector_all("tr")
+            # Split by common position indicators
+            if "ACTIVE POSITIONS" in body_text:
+                # Find all position blocks
+                # Pattern: LONG/SHORT followed by symbol
+                position_pattern = r"(LONG|SHORT)\s+([A-Z]+)\s+EXIT PLAN.*?ENTRY PRICE\s*\$?([\d,]+\.?\d*)\s*.*?QUANTITY\s*([\d,]+\.?\d*)\s*.*?LEVERAGE\s*(\d+)X.*?UNREALIZED P&L[:\s]*\$?([-\d,]+\.?\d*)"
 
-                for row in rows:
-                    position = await self._parse_position_row(row)
-                    if position:
+                matches = re.findall(position_pattern, body_text, re.DOTALL)
+
+                for match in matches:
+                    try:
+                        side = match[0].lower()
+                        symbol = match[1]
+                        entry_price = Decimal(match[2].replace(",", ""))
+                        size = Decimal(match[3].replace(",", ""))
+                        leverage = int(match[4])
+                        unrealized_pnl = Decimal(match[5].replace(",", ""))
+
+                        position = PositionData(
+                            symbol=symbol,
+                            side=side,
+                            size=size,
+                            entry_price=entry_price,
+                            current_price=entry_price,  # Approximate
+                            unrealized_pnl=unrealized_pnl,
+                            leverage=leverage,
+                        )
                         positions.append(position)
+                    except Exception as e:
+                        print(f"Error parsing position match: {e}")
+                        continue
+
         except Exception as e:
             print(f"Error scraping positions: {e}")
 

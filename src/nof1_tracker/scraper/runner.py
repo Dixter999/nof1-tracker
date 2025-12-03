@@ -39,8 +39,8 @@ class ScraperRunner:
     then saves all data to the database.
 
     Attributes:
-        MODELS: List of model names to scrape.
         headless: Whether to run browser in headless mode.
+        max_models_to_scrape: Maximum number of model pages to scrape per run.
 
     Example:
         >>> runner = ScraperRunner(headless=True)
@@ -49,28 +49,21 @@ class ScraperRunner:
         ...     print(f"Errors: {results['errors']}")
     """
 
-    MODELS: list[str] = [
-        "DeepSeek V3.1",
-        "Qwen3 Max",
-        "Claude Sonnet 4.5",
-        "Grok 4",
-        "GPT-5",
-        "Gemini 2.5 Pro",
-    ]
-
-    def __init__(self, headless: bool = True) -> None:
+    def __init__(self, headless: bool = True, max_models_to_scrape: int = 10) -> None:
         """Initialize the scraper runner.
 
         Args:
             headless: Run browsers in headless mode. Default True.
+            max_models_to_scrape: Maximum models to scrape details for. Default 10.
         """
         self.headless = headless
+        self.max_models_to_scrape = max_models_to_scrape
 
     async def run_once(self) -> dict[str, Any]:
         """Run all scrapers once and save to database.
 
-        Scrapes the leaderboard and all model pages, saving results
-        to the database.
+        Scrapes the leaderboard and uses model URLs from leaderboard entries
+        to scrape individual model pages for trades and positions.
 
         Returns:
             Dictionary containing:
@@ -82,7 +75,7 @@ class ScraperRunner:
         Example:
             >>> results = await runner.run_once()
             >>> len(results["leaderboard"])
-            6
+            32
         """
         results: dict[str, Any] = {
             "timestamp": datetime.now(UTC).isoformat(),
@@ -90,6 +83,8 @@ class ScraperRunner:
             "models": {},
             "errors": [],
         }
+
+        entries = []
 
         # Scrape leaderboard
         try:
@@ -111,43 +106,51 @@ class ScraperRunner:
             logger.error(f"Leaderboard scrape error: {e}")
             results["errors"].append(f"Leaderboard: {str(e)}")
 
-        # Scrape each model's detailed data
-        try:
-            async with ModelPageScraper(headless=self.headless) as scraper:
-                for model_name in self.MODELS:
-                    try:
-                        data = await scraper.scrape_model(model_name)
-                        results["models"][model_name] = {
-                            "trades": len(data.get("trades", [])),
-                            "chats": len(data.get("chats", [])),
-                            "positions": len(data.get("positions", [])),
-                        }
+        # Scrape model pages using URLs from leaderboard entries
+        # Only scrape models that have URLs
+        models_with_urls = [e for e in entries if e.model_url][
+            : self.max_models_to_scrape
+        ]
 
-                        # Save to database
-                        with get_session() as session:
-                            persistence = DataPersistence(session)
-                            model = persistence.get_or_create_model(
-                                model_name,
-                                LeaderboardScraper.MODEL_PROVIDERS.get(
-                                    model_name, "Unknown"
-                                ),
+        if models_with_urls:
+            try:
+                async with ModelPageScraper(headless=self.headless) as scraper:
+                    for entry in models_with_urls:
+                        model_name = entry.model_name
+                        model_url = entry.model_url
+
+                        try:
+                            # Navigate directly to the model URL
+                            data = await scraper.scrape_model_by_url(model_url)
+                            results["models"][model_name] = {
+                                "trades": len(data.get("trades", [])),
+                                "chats": len(data.get("chats", [])),
+                                "positions": len(data.get("positions", [])),
+                            }
+
+                            # Save to database
+                            with get_session() as session:
+                                persistence = DataPersistence(session)
+                                model = persistence.get_or_create_model(
+                                    model_name, entry.provider
+                                )
+
+                                for trade in data.get("trades", []):
+                                    persistence.save_trade(trade, model)
+
+                            logger.info(
+                                f"Scraped {model_name}: "
+                                f"{len(data.get('trades', []))} trades, "
+                                f"{len(data.get('positions', []))} positions"
                             )
 
-                            for trade in data.get("trades", []):
-                                persistence.save_trade(trade, model)
+                        except Exception as e:
+                            logger.error(f"Error scraping {model_name}: {e}")
+                            results["errors"].append(f"{model_name}: {str(e)}")
 
-                            for chat in data.get("chats", []):
-                                persistence.save_model_chat(chat, model)
-
-                        logger.info(f"Scraped {model_name}")
-
-                    except Exception as e:
-                        logger.error(f"Error scraping {model_name}: {e}")
-                        results["errors"].append(f"{model_name}: {str(e)}")
-
-        except Exception as e:
-            logger.error(f"Model scraper error: {e}")
-            results["errors"].append(f"Models: {str(e)}")
+            except Exception as e:
+                logger.error(f"Model scraper error: {e}")
+                results["errors"].append(f"Models: {str(e)}")
 
         return results
 
