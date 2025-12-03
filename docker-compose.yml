@@ -64,27 +64,27 @@ services:
     command: ["python", "-m", "nof1_tracker.main", "--help"]
 
   # ---------------------------------------------------------------------------
-  # Web Scraper Service (Single Run)
+  # Data Collector Service (Single Run)
   # ---------------------------------------------------------------------------
-  # Profile-activated service for one-time scraping
-  # Activate with: docker compose --profile scraper up
-  scraper:
-    profiles: [scraper]
+  # Profile-activated service for one-time data collection
+  # Activate with: docker compose --profile collector up
+  collector:
+    profiles: [collector]
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: nof1-tracker-scraper
+    container_name: nof1-tracker-collector
     env_file:
       - .env
-    # Uses NOF1_DB_HOST from .env (10.0.0.4) - no override needed
+    # Uses NOF1_DB_HOST from .env - no override needed
     volumes:
       - ./src:/app/src:ro
     command: ["python", "-m", "nof1_tracker.scraper"]
 
   # ---------------------------------------------------------------------------
-  # Monitor Service (Continuous Scraping)
+  # Monitor Service (Continuous Data Collection)
   # ---------------------------------------------------------------------------
-  # Profile-activated background service for continuous scraping every 15 min
+  # Profile-activated background service for continuous data collection every 15 min
   # Activate with: docker compose --profile monitor up -d
   monitor:
     profiles: [monitor]

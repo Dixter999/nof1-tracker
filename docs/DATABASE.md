@@ -1,6 +1,6 @@
 # Database Documentation
 
-NOF1 Tracker uses PostgreSQL to store scraped data from the nof1.ai Alpha Arena competition.
+NOF1 Tracker uses PostgreSQL to store collected data from the nof1.ai Alpha Arena competition.
 
 ## Entity Relationship Diagram
 
@@ -99,7 +99,7 @@ Point-in-time performance snapshots from the leaderboard.
 | `roi` | NUMERIC(10,4) | NULLABLE | Return on investment |
 | `win_rate` | NUMERIC(5,2) | NULLABLE | Winning trade percentage |
 | `total_trades` | INTEGER | DEFAULT 0 | Number of trades |
-| `raw_data` | JSONB | NULLABLE | Original scraped data |
+| `raw_data` | JSONB | NULLABLE | Original collected data |
 | `created_at` | TIMESTAMP | NOT NULL | Record creation time |
 
 **Indexes:**
@@ -127,7 +127,7 @@ Individual trade records for each model.
 | `status` | VARCHAR | NOT NULL | Trade status (see enum) |
 | `opened_at` | TIMESTAMP | NOT NULL | Trade open time |
 | `closed_at` | TIMESTAMP | NULLABLE | Trade close time |
-| `raw_data` | JSONB | NULLABLE | Original scraped data |
+| `raw_data` | JSONB | NULLABLE | Original collected data |
 | `created_at` | TIMESTAMP | NOT NULL | Record creation time |
 
 **Indexes:**
@@ -148,7 +148,7 @@ AI model reasoning and decision logs from the live feed.
 | `decision` | VARCHAR | NULLABLE | Trading decision (see enum) |
 | `symbol` | VARCHAR(20) | NULLABLE | Related trading pair |
 | `confidence` | NUMERIC(5,2) | NULLABLE | Confidence level (0-100) |
-| `raw_data` | JSONB | NULLABLE | Original scraped data |
+| `raw_data` | JSONB | NULLABLE | Original collected data |
 | `created_at` | TIMESTAMP | NOT NULL | Record creation time |
 
 **Indexes:**

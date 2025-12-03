@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Documentation
+    url: https://github.com/Dixter999/nof1-tracker/blob/main/README.md
+    about: Check out our documentation before opening an issue
+  - name: Security Issues
+    url: https://github.com/Dixter999/nof1-tracker/security/policy
+    about: Please report security vulnerabilities through our security policy
