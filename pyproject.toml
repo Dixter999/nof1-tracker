@@ -22,6 +22,7 @@ classifiers = [
     "Programming Language :: Python :: 3.12",
 ]
 dependencies = [
+    "click>=8.0.0",
     "playwright>=1.40.0",
     "sqlalchemy>=2.0.0",
     "psycopg2-binary>=2.9.9",
@@ -48,6 +49,7 @@ dev = [
 
 [project.scripts]
 nof1-tracker = "nof1_tracker.main:app"
+nof1 = "nof1_tracker.cli:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/nof1_tracker"]
