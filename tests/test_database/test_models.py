@@ -6,13 +6,18 @@ This module tests all database models for NOF1 Tracker:
 - LeaderboardSnapshot: Point-in-time performance data
 - Trade: Individual trade records
 - ModelChat: AI model chat/decision logs
+
+Tests run against a real PostgreSQL database for accurate behavior testing.
+Each test runs in a transaction that is rolled back after the test.
 """
 
+import os
 from datetime import datetime, timedelta
 from decimal import Decimal
+from urllib.parse import quote_plus
 
 import pytest
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, sessionmaker
 
@@ -29,25 +34,55 @@ from nof1_tracker.database.models import (
     TradeStatus,
 )
 
+# PostgreSQL test database configuration
+TEST_DB_HOST = os.getenv("DB_HOST", "10.0.0.4")
+TEST_DB_PORT = os.getenv("DB_PORT", "5432")
+TEST_DB_NAME = os.getenv("DB_NAME", "ai_model")
+TEST_DB_USER = os.getenv("DB_USER", "ai_model")
+TEST_DB_PASSWORD = os.getenv("DB_PASSWORD", "q#cCjmI5Tu3B")
 
-@pytest.fixture
+# URL-encode password to handle special characters like #
+TEST_DATABASE_URL = (
+    f"postgresql://{TEST_DB_USER}:{quote_plus(TEST_DB_PASSWORD)}"
+    f"@{TEST_DB_HOST}:{TEST_DB_PORT}/{TEST_DB_NAME}"
+)
+
+
+@pytest.fixture(scope="module")
 def engine():
-    """Create in-memory SQLite engine for testing."""
-    return create_engine("sqlite:///:memory:")
+    """Create PostgreSQL engine for testing.
+
+    Uses the ai_model database on the configured PostgreSQL server.
+    Tables are created once per test module.
+    """
+    engine = create_engine(TEST_DATABASE_URL, echo=False)
+    # Create all tables
+    Base.metadata.create_all(engine)
+    yield engine
+    # Optional: drop tables after all tests (uncomment if needed)
+    # Base.metadata.drop_all(engine)
 
 
 @pytest.fixture
 def session(engine) -> Session:
-    """Create database session with all tables.
+    """Create database session with transaction isolation.
+
+    Each test runs in a nested transaction that is rolled back after the test,
+    ensuring test isolation without leaving data in the database.
 
     Yields:
-        SQLAlchemy session with all tables created.
+        SQLAlchemy session within a transaction.
     """
-    Base.metadata.create_all(engine)
-    SessionLocal = sessionmaker(bind=engine)
+    connection = engine.connect()
+    transaction = connection.begin()
+    SessionLocal = sessionmaker(bind=connection)
     session = SessionLocal()
+
     yield session
+
     session.close()
+    transaction.rollback()
+    connection.close()
 
 
 class TestSeasonModel:
