@@ -6,10 +6,9 @@ Tests verify command invocation, options parsing, and help text.
 
 from unittest.mock import AsyncMock, MagicMock, patch
 
-import pytest
 from click.testing import CliRunner
 
-from nof1_tracker.cli import main, scrape, scrape_continuous
+from nof1_tracker.cli import main
 
 
 class TestCliHelp:
@@ -130,7 +129,7 @@ class TestScrapeContinuousCommand:
             mock_runner.run_continuous = AsyncMock(side_effect=KeyboardInterrupt())
             mock_runner_cls.return_value = mock_runner
 
-            result = runner.invoke(main, ["scrape-continuous"])
+            runner.invoke(main, ["scrape-continuous"])
             # Should handle KeyboardInterrupt gracefully
             mock_runner.run_continuous.assert_called_once_with(interval_minutes=15)
 
@@ -142,7 +141,7 @@ class TestScrapeContinuousCommand:
             mock_runner.run_continuous = AsyncMock(side_effect=KeyboardInterrupt())
             mock_runner_cls.return_value = mock_runner
 
-            result = runner.invoke(main, ["scrape-continuous", "--interval", "30"])
+            runner.invoke(main, ["scrape-continuous", "--interval", "30"])
             mock_runner.run_continuous.assert_called_once_with(interval_minutes=30)
 
     def test_scrape_continuous_headless_option(self) -> None:
@@ -153,7 +152,7 @@ class TestScrapeContinuousCommand:
             mock_runner.run_continuous = AsyncMock(side_effect=KeyboardInterrupt())
             mock_runner_cls.return_value = mock_runner
 
-            result = runner.invoke(main, ["scrape-continuous", "--no-headless"])
+            runner.invoke(main, ["scrape-continuous", "--no-headless"])
             mock_runner_cls.assert_called_once_with(headless=False)
 
 
