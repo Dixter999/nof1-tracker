@@ -1,0 +1,60 @@
+# Git
+.git
+.gitignore
+
+# Python
+__pycache__
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv
+venv
+ENV
+.eggs
+*.egg-info
+*.egg
+.mypy_cache
+.pytest_cache
+.ruff_cache
+
+# IDE
+.idea
+.vscode
+*.swp
+*.swo
+
+# Project specific
+.env
+.env.local
+.env.*.local
+*.log
+*.tmp
+
+# Node (if present)
+node_modules
+
+# Claude configuration
+.claude
+.claude-code
+.mcp.json
+CLAUDE.md
+
+# Build artifacts
+dist
+build
+*.whl
+
+# Documentation
+docs/_build
+*.md
+!README.md
+
+# Testing
+.coverage
+htmlcov
+.tox
+
+# OS files
+.DS_Store
+Thumbs.db
