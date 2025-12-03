@@ -13,7 +13,7 @@ All models use SQLAlchemy 2.0 style with Mapped type annotations.
 import enum
 from datetime import datetime
 from decimal import Decimal
-from typing import Any, Optional
+from typing import Any
 
 from sqlalchemy import (
     JSON,
@@ -83,7 +83,7 @@ class Season(Base):
     season_number: Mapped[int] = mapped_column(Integer, unique=True, nullable=False)
     name: Mapped[str] = mapped_column(String(100), nullable=False)
     start_date: Mapped[datetime] = mapped_column(DateTime, nullable=False)
-    end_date: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    end_date: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     initial_capital: Mapped[Decimal] = mapped_column(
         Numeric(15, 2), default=Decimal("10000.00")
     )
@@ -94,7 +94,7 @@ class Season(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime, default=func.now(), nullable=False
     )
-    updated_at: Mapped[Optional[datetime]] = mapped_column(
+    updated_at: Mapped[datetime | None] = mapped_column(
         DateTime, onupdate=func.now(), nullable=True
     )
 
@@ -120,7 +120,7 @@ class LLMModel(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime, default=func.now(), nullable=False
     )
-    updated_at: Mapped[Optional[datetime]] = mapped_column(
+    updated_at: Mapped[datetime | None] = mapped_column(
         DateTime, onupdate=func.now(), nullable=True
     )
 
@@ -132,7 +132,9 @@ class LLMModel(Base):
 
     def __repr__(self) -> str:
         """Return string representation of LLMModel."""
-        return f"<LLMModel(id={self.id}, name='{self.name}', provider='{self.provider}')>"
+        return (
+            f"<LLMModel(id={self.id}, name='{self.name}', provider='{self.provider}')>"
+        )
 
 
 class LeaderboardSnapshot(Base):
@@ -157,10 +159,10 @@ class LeaderboardSnapshot(Base):
     total_assets: Mapped[Decimal] = mapped_column(Numeric(15, 2), nullable=False)
     pnl: Mapped[Decimal] = mapped_column(Numeric(15, 2), nullable=False)
     pnl_percent: Mapped[Decimal] = mapped_column(Numeric(10, 4), nullable=False)
-    roi: Mapped[Optional[Decimal]] = mapped_column(Numeric(10, 4), nullable=True)
-    win_rate: Mapped[Optional[Decimal]] = mapped_column(Numeric(5, 2), nullable=True)
+    roi: Mapped[Decimal | None] = mapped_column(Numeric(10, 4), nullable=True)
+    win_rate: Mapped[Decimal | None] = mapped_column(Numeric(5, 2), nullable=True)
     total_trades: Mapped[int] = mapped_column(Integer, default=0)
-    raw_data: Mapped[Optional[dict[str, Any]]] = mapped_column(JSONType, nullable=True)
+    raw_data: Mapped[dict[str, Any] | None] = mapped_column(JSONType, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime, default=func.now(), nullable=False
     )
@@ -193,19 +195,19 @@ class Trade(Base):
         Enum(TradeSide, create_constraint=False, native_enum=False), nullable=False
     )
     entry_price: Mapped[Decimal] = mapped_column(Numeric(20, 8), nullable=False)
-    exit_price: Mapped[Optional[Decimal]] = mapped_column(Numeric(20, 8), nullable=True)
+    exit_price: Mapped[Decimal | None] = mapped_column(Numeric(20, 8), nullable=True)
     size: Mapped[Decimal] = mapped_column(Numeric(20, 8), nullable=False)
     leverage: Mapped[int] = mapped_column(Integer, default=1)
-    pnl: Mapped[Optional[Decimal]] = mapped_column(Numeric(15, 2), nullable=True)
-    pnl_percent: Mapped[Optional[Decimal]] = mapped_column(
+    pnl: Mapped[Decimal | None] = mapped_column(Numeric(15, 2), nullable=True)
+    pnl_percent: Mapped[Decimal | None] = mapped_column(
         Numeric(10, 4), nullable=True
     )
     status: Mapped[TradeStatus] = mapped_column(
         Enum(TradeStatus, create_constraint=False, native_enum=False), nullable=False
     )
     opened_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
-    closed_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
-    raw_data: Mapped[Optional[dict[str, Any]]] = mapped_column(JSONType, nullable=True)
+    closed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    raw_data: Mapped[dict[str, Any] | None] = mapped_column(JSONType, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime, default=func.now(), nullable=False
     )
@@ -232,12 +234,12 @@ class ModelChat(Base):
     )
     timestamp: Mapped[datetime] = mapped_column(DateTime, nullable=False)
     content: Mapped[str] = mapped_column(Text, nullable=False)
-    decision: Mapped[Optional[ChatDecision]] = mapped_column(
+    decision: Mapped[ChatDecision | None] = mapped_column(
         Enum(ChatDecision, create_constraint=False, native_enum=False), nullable=True
     )
-    symbol: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
-    confidence: Mapped[Optional[Decimal]] = mapped_column(Numeric(5, 2), nullable=True)
-    raw_data: Mapped[Optional[dict[str, Any]]] = mapped_column(JSONType, nullable=True)
+    symbol: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    confidence: Mapped[Decimal | None] = mapped_column(Numeric(5, 2), nullable=True)
+    raw_data: Mapped[dict[str, Any] | None] = mapped_column(JSONType, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime, default=func.now(), nullable=False
     )
