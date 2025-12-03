@@ -471,7 +471,8 @@ class ModelPageScraper(BaseScraper):
             if "ACTIVE POSITIONS" in body_text:
                 # Find all position blocks
                 # Pattern: LONG/SHORT followed by symbol
-                position_pattern = r"(LONG|SHORT)\s+([A-Z]+)\s+EXIT PLAN.*?ENTRY PRICE\s*\$?([\d,]+\.?\d*)\s*.*?QUANTITY\s*([\d,]+\.?\d*)\s*.*?LEVERAGE\s*(\d+)X.*?UNREALIZED P&L[:\s]*\$?([-\d,]+\.?\d*)"
+                # More robust regex with required digits
+                position_pattern = r"(LONG|SHORT)\s+([A-Z]+)\s+EXIT PLAN.*?ENTRY PRICE\s*\$?([\d,]+(?:\.\d+)?)\s*.*?QUANTITY\s*([\d,]+(?:\.\d+)?)\s*.*?LEVERAGE\s*(\d+)X.*?UNREALIZED P&L[:\s]*\$?(-?[\d,]+(?:\.\d+)?)"
 
                 matches = re.findall(position_pattern, body_text, re.DOTALL)
 
@@ -479,10 +480,21 @@ class ModelPageScraper(BaseScraper):
                     try:
                         side = match[0].lower()
                         symbol = match[1]
-                        entry_price = Decimal(match[2].replace(",", ""))
-                        size = Decimal(match[3].replace(",", ""))
-                        leverage = int(match[4])
-                        unrealized_pnl = Decimal(match[5].replace(",", ""))
+
+                        # Clean and validate numeric values before conversion
+                        entry_str = match[2].replace(",", "").strip()
+                        size_str = match[3].replace(",", "").strip()
+                        leverage_str = match[4].strip()
+                        pnl_str = match[5].replace(",", "").strip()
+
+                        # Skip if any required value is empty
+                        if not entry_str or not size_str or not leverage_str:
+                            continue
+
+                        entry_price = Decimal(entry_str)
+                        size = Decimal(size_str)
+                        leverage = int(leverage_str)
+                        unrealized_pnl = Decimal(pnl_str) if pnl_str else Decimal("0")
 
                         position = PositionData(
                             symbol=symbol,
@@ -494,12 +506,17 @@ class ModelPageScraper(BaseScraper):
                             leverage=leverage,
                         )
                         positions.append(position)
-                    except Exception as e:
-                        print(f"Error parsing position match: {e}")
+                    except (ValueError, ArithmeticError) as e:
+                        # Log specific parsing errors for debugging
+                        import logging
+
+                        logging.debug(f"Skipping position - parse error: {e}")
                         continue
 
         except Exception as e:
-            print(f"Error scraping positions: {e}")
+            import logging
+
+            logging.error(f"Error scraping positions: {e}")
 
         return positions
 
