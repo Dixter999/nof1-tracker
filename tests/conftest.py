@@ -101,7 +101,9 @@ def db_session(test_engine: Engine) -> Generator[Session, None, None]:
     yield session
 
     session.close()
-    transaction.rollback()
+    # Only rollback if transaction is still active (not already rolled back by IntegrityError)
+    if transaction.is_active:
+        transaction.rollback()
     connection.close()
 
 
