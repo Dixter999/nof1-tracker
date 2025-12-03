@@ -113,6 +113,7 @@ class ScraperRunner:
         ]
 
         if models_with_urls:
+            model_timeout = 60  # 60 second timeout per model
             try:
                 async with ModelPageScraper(headless=self.headless) as scraper:
                     for entry in models_with_urls:
@@ -120,8 +121,11 @@ class ScraperRunner:
                         model_url = entry.model_url
 
                         try:
-                            # Navigate directly to the model URL
-                            data = await scraper.scrape_model_by_url(model_url)
+                            # Navigate directly to the model URL with timeout
+                            data = await asyncio.wait_for(
+                                scraper.scrape_model_by_url(model_url),
+                                timeout=model_timeout
+                            )
                             results["models"][model_name] = {
                                 "trades": len(data.get("trades", [])),
                                 "chats": len(data.get("chats", [])),
@@ -144,6 +148,9 @@ class ScraperRunner:
                                 f"{len(data.get('positions', []))} positions"
                             )
 
+                        except asyncio.TimeoutError:
+                            logger.warning(f"Timeout scraping {model_name} - skipping")
+                            results["errors"].append(f"{model_name}: timeout")
                         except Exception as e:
                             logger.error(f"Error scraping {model_name}: {e}")
                             results["errors"].append(f"{model_name}: {str(e)}")
@@ -202,7 +209,7 @@ class ScraperRunner:
         """Run scrapers continuously at specified interval.
 
         Runs all scrapers in an infinite loop with the specified
-        interval between runs.
+        interval between runs. Each scrape cycle has a 10-minute timeout.
 
         Args:
             interval_minutes: Minutes to wait between scrape cycles.
@@ -216,16 +223,24 @@ class ScraperRunner:
             >>> await runner.run_continuous(interval_minutes=15)
         """
         logger.info(f"Starting continuous scraping every {interval_minutes} minutes")
+        cycle_timeout = 600  # 10 minute timeout per cycle
 
         while True:
             try:
-                results = await self.run_once()
+                # Run with timeout to prevent hanging
+                results = await asyncio.wait_for(
+                    self.run_once(),
+                    timeout=cycle_timeout
+                )
                 logger.info(f"Scrape complete: {len(results['leaderboard'])} models")
                 if results["errors"]:
                     logger.warning(f"Errors: {results['errors']}")
+            except asyncio.TimeoutError:
+                logger.error(f"Scrape cycle timed out after {cycle_timeout}s - will retry next cycle")
             except Exception as e:
                 logger.error(f"Scrape cycle error: {e}")
 
+            logger.info(f"Sleeping {interval_minutes} minutes until next cycle...")
             await asyncio.sleep(interval_minutes * 60)
 
 
