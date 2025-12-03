@@ -26,7 +26,7 @@ from typing import Any
 
 from nof1_tracker.database.connection import get_session
 from nof1_tracker.scraper.leaderboard import LeaderboardScraper
-from nof1_tracker.scraper.models import ModelPageScraper
+from nof1_tracker.scraper.models import LivePageScraper, ModelChatData, ModelPageScraper
 from nof1_tracker.scraper.persistence import DataPersistence
 
 logger = logging.getLogger(__name__)
@@ -151,6 +151,50 @@ class ScraperRunner:
             except Exception as e:
                 logger.error(f"Model scraper error: {e}")
                 results["errors"].append(f"Models: {str(e)}")
+
+        # Scrape chat data from the live page
+        try:
+            async with LivePageScraper(headless=self.headless) as scraper:
+                all_chats = await scraper.scrape_all_chats(limit=200)
+                results["chats"] = len(all_chats)
+
+                # Save chats to database
+                with get_session() as session:
+                    persistence = DataPersistence(session)
+
+                    for chat_data in all_chats:
+                        # Get or create model for this chat
+                        full_model_name = (
+                            f"{chat_data['model_name']} - {chat_data['competition']}"
+                        )
+                        model = persistence.get_or_create_model(
+                            full_model_name, "Unknown"
+                        )
+
+                        # Create serializable raw_data (convert datetime to string)
+                        raw_data = {
+                            "model_name": chat_data["model_name"],
+                            "competition": chat_data["competition"],
+                            "timestamp": chat_data["timestamp"],
+                            "scraped_at": chat_data["scraped_at"].isoformat(),
+                        }
+
+                        # Create ModelChatData and save
+                        chat = ModelChatData(
+                            timestamp=chat_data["scraped_at"],
+                            content=chat_data["content"],
+                            decision=None,
+                            symbol=None,
+                            confidence=None,
+                            raw_data=raw_data,
+                        )
+                        persistence.save_model_chat(chat, model)
+
+                logger.info(f"Saved {len(all_chats)} chat entries from live page")
+
+        except Exception as e:
+            logger.error(f"Live page chat scrape error: {e}")
+            results["errors"].append(f"Chats: {str(e)}")
 
         return results
 

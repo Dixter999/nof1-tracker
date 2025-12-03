@@ -29,6 +29,7 @@ Example:
 from nof1_tracker.scraper.base import BaseScraper
 from nof1_tracker.scraper.leaderboard import LeaderboardEntry, LeaderboardScraper
 from nof1_tracker.scraper.models import (
+    LivePageScraper,
     ModelChatData,
     ModelPageScraper,
     PositionData,
@@ -42,6 +43,7 @@ __all__ = [
     "LeaderboardScraper",
     "LeaderboardEntry",
     "ModelPageScraper",
+    "LivePageScraper",
     "TradeData",
     "ModelChatData",
     "PositionData",

@@ -563,41 +563,129 @@ class ModelPageScraper(BaseScraper):
     async def _scrape_model_chat(self, page: Page) -> list[ModelChatData]:
         """Parse model chat/reasoning from page.
 
+        Note: Chat data is on the live page (nof1.ai/), not individual model pages.
+        This method returns empty list. Use LivePageScraper for chat data.
+
         Args:
             page: The browser page to scrape from.
 
         Returns:
-            List of ModelChatData objects.
+            Empty list - chat is scraped from live page instead.
         """
-        chats = []
+        # Chat/reasoning is on the live page, not model pages
+        return []
 
-        # Click on chat/reasoning tab if exists
-        try:
-            chat_tab = await page.query_selector('[data-testid="chat-tab"]')
-            if not chat_tab:
-                chat_tab = await page.query_selector(
-                    'button:has-text("Chat"), button:has-text("Reasoning")'
+
+class LivePageScraper(BaseScraper):
+    """Scraper for the nof1.ai live page chat/reasoning.
+
+    The live page shows real-time reasoning from all models.
+    Each entry contains: model name, competition type, timestamp, and content.
+
+    Example:
+        >>> async with LivePageScraper() as scraper:
+        ...     chats = await scraper.scrape_all_chats()
+        ...     for chat in chats:
+        ...         print(f"{chat['model']}: {chat['content'][:50]}...")
+    """
+
+    LIVE_URL = f"{BaseScraper.BASE_URL}/"
+
+    async def scrape_all_chats(self, limit: int = 100) -> list[dict[str, Any]]:
+        """Scrape all chat entries from the live page.
+
+        Args:
+            limit: Maximum number of chat entries to return.
+
+        Returns:
+            List of dictionaries containing:
+                - model_name: e.g., "CLAUDE-SONNET-4-5"
+                - competition: e.g., "Monk Mode"
+                - timestamp: e.g., "12/03 09:49:15"
+                - content: The reasoning text
+                - scraped_at: When this was scraped
+        """
+        import asyncio
+        import re
+
+        async with self.new_page() as page:
+            await page.goto(self.LIVE_URL)
+            await page.wait_for_load_state("networkidle")
+            await asyncio.sleep(3)
+
+            chats = []
+
+            # Find all chat entries by the leading-relaxed class
+            chat_divs = await page.query_selector_all(
+                "div.terminal-text.leading-relaxed.text-black"
+            )
+
+            for chat_div in chat_divs[:limit]:
+                try:
+                    content = await chat_div.inner_text()
+
+                    # Navigate up to parent to get model info and timestamp
+                    parent = await chat_div.evaluate_handle(
+                        'el => el.closest("div[class*=border]").parentElement.parentElement'
+                    )
+
+                    if parent:
+                        parent_text = await parent.inner_text()
+
+                        # Parse model name and competition from format: "MODEL|Competition"
+                        # e.g., "CLAUDE-SONNET-4-5|Monk Mode12/03..."
+                        match = re.match(
+                            r"([A-Z0-9\-\.]+)\|([A-Za-z ]+)(\d{2}/\d{2} \d{2}:\d{2}:\d{2})",
+                            parent_text,
+                        )
+
+                        if match:
+                            model_name = match.group(1)
+                            competition = match.group(2).strip()
+                            timestamp = match.group(3)
+
+                            chats.append(
+                                {
+                                    "model_name": model_name,
+                                    "competition": competition,
+                                    "timestamp": timestamp,
+                                    "content": content,
+                                    "scraped_at": self.now_utc(),
+                                }
+                            )
+
+                except Exception as e:
+                    print(f"Error parsing chat entry: {e}")
+                    continue
+
+            return chats
+
+    async def scrape_chats_for_model(self, model_name: str) -> list[ModelChatData]:
+        """Scrape chat entries for a specific model.
+
+        Args:
+            model_name: The model name to filter by (case-insensitive partial match).
+
+        Returns:
+            List of ModelChatData objects for the specified model.
+        """
+        all_chats = await self.scrape_all_chats()
+
+        model_chats = []
+        for chat in all_chats:
+            if model_name.upper() in chat["model_name"].upper():
+                model_chats.append(
+                    ModelChatData(
+                        timestamp=self.now_utc(),
+                        content=chat["content"],
+                        decision=None,  # Could parse from content if needed
+                        symbol=None,
+                        confidence=None,
+                        raw_data=chat,
+                    )
                 )
-            if chat_tab:
-                await chat_tab.click()
-                await page.wait_for_timeout(1000)
-        except Exception:
-            pass
 
-        # Parse chat entries
-        try:
-            entries = await page.query_selector_all('[data-testid="chat-entry"]')
-            if not entries:
-                entries = await page.query_selector_all(".chat-entry, .reasoning-entry")
-
-            for entry in entries:
-                chat = await self._parse_chat_entry(entry)
-                if chat:
-                    chats.append(chat)
-        except Exception as e:
-            print(f"Error scraping chat: {e}")
-
-        return chats
+        return model_chats
 
     async def _parse_chat_entry(self, entry: ElementHandle) -> ModelChatData | None:
         """Parse a single chat entry.
