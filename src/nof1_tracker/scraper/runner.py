@@ -95,7 +95,7 @@ class ScraperRunner:
                 # Save to database
                 with get_session() as session:
                     persistence = DataPersistence(session)
-                    season = persistence.get_or_create_season(1)
+                    season = persistence.get_or_create_season("1.5")
 
                     for entry in entries:
                         persistence.save_leaderboard_entry(entry, season)
@@ -135,12 +135,13 @@ class ScraperRunner:
                             # Save to database
                             with get_session() as session:
                                 persistence = DataPersistence(session)
+                                season = persistence.get_or_create_season("1.5")
                                 model = persistence.get_or_create_model(
                                     model_name, entry.provider
                                 )
 
                                 for trade in data.get("trades", []):
-                                    persistence.save_trade(trade, model)
+                                    persistence.save_trade(trade, model, season)
 
                             logger.info(
                                 f"Scraped {model_name}: "
@@ -168,6 +169,7 @@ class ScraperRunner:
                 # Save chats to database
                 with get_session() as session:
                     persistence = DataPersistence(session)
+                    season = persistence.get_or_create_season("1.5")
 
                     for chat_data in all_chats:
                         # Get or create model for this chat
@@ -195,7 +197,7 @@ class ScraperRunner:
                             confidence=None,
                             raw_data=raw_data,
                         )
-                        persistence.save_model_chat(chat, model)
+                        persistence.save_model_chat(chat, model, season)
 
                 logger.info(f"Saved {len(all_chats)} chat entries from live page")
 

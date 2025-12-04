@@ -2,7 +2,7 @@
 # NOF1 Tracker - Docker Compose Configuration
 # =============================================================================
 #
-# Local development environment with PostgreSQL database and Python application
+# Application services connecting to external PostgreSQL at 10.0.0.5:30432
 #
 # Usage:
 #   Start all services:     docker compose up -d
@@ -10,37 +10,10 @@
 #   Start with monitor:     docker compose --profile monitor up -d
 #   View logs:              docker compose logs -f
 #   Stop all services:      docker compose down
-#   Remove volumes:         docker compose down -v
 #
 # =============================================================================
 
 services:
-  # ---------------------------------------------------------------------------
-  # PostgreSQL Database
-  # ---------------------------------------------------------------------------
-  # Primary data store for experiment tracking and trade records
-  postgres:
-    image: postgres:16-alpine
-    container_name: nof1-tracker-db
-    environment:
-      POSTGRES_USER: ${NOF1_DB_USER:-nof1_user}
-      POSTGRES_PASSWORD: ${NOF1_DB_PASSWORD:-nof1_password}
-      POSTGRES_DB: ${NOF1_DB_NAME:-nof1_tracker}
-    ports:
-      - "${NOF1_DB_PORT:-5432}:5432"
-    volumes:
-      # Persistent data storage
-      - postgres_data:/var/lib/postgresql/data
-      # Initialize database with enum types on first run
-      - ./migrations/init:/docker-entrypoint-initdb.d:ro
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${NOF1_DB_USER:-nof1_user} -d ${NOF1_DB_NAME:-nof1_tracker}"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 10s
-    restart: unless-stopped
-
   # ---------------------------------------------------------------------------
   # Main Application
   # ---------------------------------------------------------------------------
@@ -52,15 +25,9 @@ services:
     container_name: nof1-tracker-app
     env_file:
       - .env
-    environment:
-      # Override DB host to use Docker network
-      NOF1_DB_HOST: postgres
     volumes:
       # Mount source for development (read-only for safety)
       - ./src:/app/src:ro
-    depends_on:
-      postgres:
-        condition: service_healthy
     command: ["python", "-m", "nof1_tracker.main", "--help"]
 
   # ---------------------------------------------------------------------------
@@ -94,17 +61,10 @@ services:
     container_name: nof1-tracker-monitor
     env_file:
       - .env
-    # Uses NOF1_DB_HOST from .env (10.0.0.4) - no override needed
+    # Uses external PostgreSQL from .env (10.0.0.5:30432)
     volumes:
       - ./src:/app/src:ro
     # Auto-restart for persistent monitoring
     restart: unless-stopped
     command: ["python", "-m", "nof1_tracker.scraper", "--continuous", "--interval", "15"]
 
-# =============================================================================
-# Volumes
-# =============================================================================
-volumes:
-  # Named volume for PostgreSQL data persistence
-  postgres_data:
-    driver: local

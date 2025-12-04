@@ -80,7 +80,7 @@ class Season(Base):
     __tablename__ = "seasons"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    season_number: Mapped[int] = mapped_column(Integer, unique=True, nullable=False)
+    season_number: Mapped[Decimal] = mapped_column(Numeric(5, 1), unique=True, nullable=False)
     name: Mapped[str] = mapped_column(String(100), nullable=False)
     start_date: Mapped[datetime] = mapped_column(DateTime, nullable=False)
     end_date: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
@@ -101,6 +101,8 @@ class Season(Base):
     snapshots: Mapped[list["LeaderboardSnapshot"]] = relationship(
         "LeaderboardSnapshot", back_populates="season"
     )
+    trades: Mapped[list["Trade"]] = relationship("Trade", back_populates="season")
+    chats: Mapped[list["ModelChat"]] = relationship("ModelChat", back_populates="season")
 
     def __repr__(self) -> str:
         """Return string representation of Season."""
@@ -181,6 +183,7 @@ class Trade(Base):
     __tablename__ = "trades"
     __table_args__ = (
         Index("ix_trades_model_id", "model_id"),
+        Index("ix_trades_season_id", "season_id"),
         Index("ix_trades_symbol", "symbol"),
         Index("ix_trades_opened_at", "opened_at"),
     )
@@ -188,6 +191,9 @@ class Trade(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     model_id: Mapped[int] = mapped_column(
         Integer, ForeignKey("llm_models.id"), nullable=False
+    )
+    season_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("seasons.id"), nullable=False
     )
     trade_id: Mapped[str] = mapped_column(String(100), unique=True, nullable=False)
     symbol: Mapped[str] = mapped_column(String(20), nullable=False)
@@ -213,6 +219,7 @@ class Trade(Base):
     )
 
     model: Mapped["LLMModel"] = relationship("LLMModel", back_populates="trades")
+    season: Mapped["Season"] = relationship("Season", back_populates="trades")
 
     def __repr__(self) -> str:
         """Return string representation of Trade."""
@@ -225,12 +232,16 @@ class ModelChat(Base):
     __tablename__ = "model_chats"
     __table_args__ = (
         Index("ix_model_chats_model_id", "model_id"),
+        Index("ix_model_chats_season_id", "season_id"),
         Index("ix_model_chats_timestamp", "timestamp"),
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     model_id: Mapped[int] = mapped_column(
         Integer, ForeignKey("llm_models.id"), nullable=False
+    )
+    season_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("seasons.id"), nullable=False
     )
     timestamp: Mapped[datetime] = mapped_column(DateTime, nullable=False)
     content: Mapped[str] = mapped_column(Text, nullable=False)
@@ -245,6 +256,7 @@ class ModelChat(Base):
     )
 
     model: Mapped["LLMModel"] = relationship("LLMModel", back_populates="chats")
+    season: Mapped["Season"] = relationship("Season", back_populates="chats")
 
     def __repr__(self) -> str:
         """Return string representation of ModelChat."""

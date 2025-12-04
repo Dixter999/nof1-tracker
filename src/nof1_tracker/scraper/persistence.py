@@ -11,10 +11,11 @@ Example:
     >>> with get_session() as session:
     ...     persistence = DataPersistence(session)
     ...     model = persistence.get_or_create_model("Claude Sonnet 4.5", "Anthropic")
-    ...     season = persistence.get_or_create_season(1)
+    ...     season = persistence.get_or_create_season(Decimal("1.5"))
 """
 
 from datetime import UTC, datetime
+from decimal import Decimal
 
 from sqlalchemy.orm import Session
 
@@ -87,22 +88,26 @@ class DataPersistence:
             self.session.flush()
         return model
 
-    def get_or_create_season(self, season_number: int = 1) -> Season:
+    def get_or_create_season(self, season_number: Decimal | float | str = Decimal("1.5")) -> Season:
         """Get existing season or create new one.
 
         Looks up a season by number and creates it if it doesn't exist.
 
         Args:
-            season_number: The season number to look up or create.
+            season_number: The season number to look up or create (supports decimals like 1.5).
 
         Returns:
             Season: The existing or newly created season.
 
         Example:
-            >>> season = persistence.get_or_create_season(1)
+            >>> season = persistence.get_or_create_season(Decimal("1.5"))
             >>> season.name
-            'Season 1'
+            'Season 1.5'
         """
+        # Convert to Decimal if needed
+        if not isinstance(season_number, Decimal):
+            season_number = Decimal(str(season_number))
+
         season = (
             self.session.query(Season).filter_by(season_number=season_number).first()
         )
@@ -162,7 +167,7 @@ class DataPersistence:
         self.session.add(snapshot)
         return snapshot
 
-    def save_trade(self, trade: TradeData, model: LLMModel) -> Trade:
+    def save_trade(self, trade: TradeData, model: LLMModel, season: Season) -> Trade:
         """Save a trade record.
 
         Creates a new Trade record in the database.
@@ -170,6 +175,7 @@ class DataPersistence:
         Args:
             trade: The trade data to save.
             model: The LLM model that made this trade.
+            season: The season this trade belongs to.
 
         Returns:
             Trade: The newly created trade record.
@@ -180,7 +186,7 @@ class DataPersistence:
             - "liquidated" status is mapped to TradeStatus.cancelled
 
         Example:
-            >>> db_trade = persistence.save_trade(trade_data, model)
+            >>> db_trade = persistence.save_trade(trade_data, model, season)
             >>> db_trade.symbol
             'BTC-PERP'
         """
@@ -204,6 +210,7 @@ class DataPersistence:
 
         db_trade = Trade(
             model_id=model.id,
+            season_id=season.id,
             trade_id=trade_id,
             symbol=trade.symbol,
             side=side,
@@ -221,7 +228,7 @@ class DataPersistence:
         self.session.add(db_trade)
         return db_trade
 
-    def save_model_chat(self, chat: ModelChatData, model: LLMModel) -> ModelChat:
+    def save_model_chat(self, chat: ModelChatData, model: LLMModel, season: Season) -> ModelChat:
         """Save a model chat entry.
 
         Creates a new ModelChat record in the database.
@@ -229,6 +236,7 @@ class DataPersistence:
         Args:
             chat: The chat data to save.
             model: The LLM model that created this chat.
+            season: The season this chat belongs to.
 
         Returns:
             ModelChat: The newly created chat record.
@@ -238,7 +246,7 @@ class DataPersistence:
             "close" is mapped to ChatDecision.none.
 
         Example:
-            >>> db_chat = persistence.save_model_chat(chat_data, model)
+            >>> db_chat = persistence.save_model_chat(chat_data, model, season)
             >>> db_chat.decision
             ChatDecision.buy
         """
@@ -256,6 +264,7 @@ class DataPersistence:
 
         db_chat = ModelChat(
             model_id=model.id,
+            season_id=season.id,
             timestamp=chat.timestamp,
             content=chat.content,
             decision=decision,
