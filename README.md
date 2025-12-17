@@ -192,6 +192,55 @@ For security concerns, please see our [Security Policy](SECURITY.md).
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
+## Season Transitions
+
+### Switching to Season 2
+
+When Alpha Arena Season 2 officially starts, use the automated transition script:
+
+```bash
+# Automated transition (recommended)
+./switch-to-season-2.sh
+```
+
+**Or manually:**
+
+```bash
+# 1. Stop the current monitor
+docker stop nof1-tracker-monitor
+
+# 2. Update season in code
+sed -i 's/get_or_create_season("1.5")/get_or_create_season("2")/g' \
+  src/nof1_tracker/scraper/runner.py
+
+# 3. Rebuild and restart
+docker compose build monitor
+docker compose --profile monitor up -d
+
+# 4. Verify Season 2 is scraping
+docker logs -f nof1-tracker-monitor
+```
+
+### Season Status
+
+Check current season data:
+
+```bash
+# Connect to database
+docker exec -e PGPASSWORD='your_password' your-postgres-container \
+  psql -h your_host -p your_port -U your_user -d your_db \
+  -c "SELECT * FROM seasons ORDER BY id;"
+
+# Check recent data collection
+docker exec -e PGPASSWORD='your_password' your-postgres-container \
+  psql -h your_host -p your_port -U your_user -d your_db \
+  -c "SELECT season_number, COUNT(*) as trades, MAX(opened_at) as last_trade
+      FROM trades t JOIN seasons s ON t.season_id = s.id
+      GROUP BY s.season_number ORDER BY s.season_number;"
+```
+
+**Note:** The monitor automatically creates new season entries in the database when transitioning.
+
 ## Disclaimer
 
 This project is intended for educational and research purposes. Users are responsible for ensuring compliance with applicable terms of service and regulations. The authors are not responsible for any misuse of this software.
